@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Đơn giá{% endblock %}
+{% block topbar_title %}Cấu hình đơn giá{% endblock %}
+
+{% block content %}
+{% if thong_bao %}<div class="alert alert-success">{{ thong_bao }}</div>{% endif %}
+{% if loi %}<div class="alert alert-error">{{ loi }}</div>{% endif %}
+
+<div class="action-grid">
+  <div class="action-card blue">
+    <div class="action-icon blue">💰</div>
+    <div class="action-body">
+      <h3>Đơn giá điện / nước</h3>
+      <p>Giá mới chỉ áp dụng cho hóa đơn lập sau thời điểm hiệu lực. Hóa đơn cũ không bị đổi.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>➕ Thêm / cập nhật đơn giá</h2></div>
+  <form method="post" action="/don-gia/them">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Loại</label>
+        <select name="loai" required>
+          <option value="dien">Điện (đ/kWh)</option>
+          <option value="nuoc">Nước (đ/m³)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tên mức</label>
+        <input type="text" name="ten_muc" required value="Giá cố định" placeholder="VD: Giá điện 2026">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Đơn giá (VND)</label>
+        <input type="number" name="don_gia" min="1" step="1" required placeholder="3500">
+      </div>
+      <div class="form-group">
+        <label>Ngày hiệu lực</label>
+        <input type="date" name="ngay_hieu_luc" required>
+      </div>
+    </div>
+    <button class="btn" type="submit">Lưu đơn giá mới</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>📋 Danh sách đơn giá</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Loại</th>
+          <th>Tên mức</th>
+          <th>Đơn giá</th>
+          <th>Hiệu lực</th>
+          <th>Đang áp dụng</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in danh_sach %}
+        <tr>
+          <td>{{ d.ma_don_gia }}</td>
+          <td>{{ d.loai.value if d.loai.value is defined else d.loai }}</td>
+          <td>{{ d.ten_muc }}</td>
+          <td>{{ '{:,.0f}'.format(d.don_gia) }}</td>
+          <td>{{ d.ngay_hieu_luc }}</td>
+          <td>
+            {% if d.dang_ap_dung %}
+            <span class="badge badge-success">Có</span>
+            {% else %}
+            <span class="badge">Không</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty">Chưa có đơn giá</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

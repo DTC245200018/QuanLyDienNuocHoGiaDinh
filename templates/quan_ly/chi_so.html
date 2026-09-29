@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Chỉ số{% endblock %}
+{% block topbar_title %}Nhập chỉ số{% endblock %}
+
+{% block content %}
+{% if thong_bao %}<div class="alert alert-success">{{ thong_bao }}</div>{% endif %}
+{% if loi %}<div class="alert alert-error">{{ loi }}</div>{% endif %}
+
+<div class="action-grid">
+  <div class="action-card teal">
+    <div class="action-icon teal">📟</div>
+    <div class="action-body">
+      <h3>Nhập chỉ số thủ công</h3>
+      <p>Ghi chỉ số điện/nước theo công tơ. Hệ thống từ chối nếu chỉ số mới nhỏ hơn chỉ số cũ.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>🔍 Lọc theo hộ</h2></div>
+  <form method="get" action="/chi-so" class="form-row" style="align-items:end;margin:0;">
+    <div class="form-group" style="margin:0;">
+      <label>Mã hộ hoặc tên</label>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="VD: 21 hoặc Nguyễn">
+    </div>
+    <div class="form-group" style="margin:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn" type="submit">Tìm</button>
+      {% if q %}<a class="btn btn-outline" href="/chi-so">Xóa lọc</a>{% endif %}
+    </div>
+  </form>
+  {% if q %}
+  <p style="margin-top:12px;font-size:.88rem;color:var(--muted);">
+    {% if phong_loc %}
+      Khớp:
+      {% for p in phong_loc %}<span class="badge badge-info">#{{ p.ma_phong }} {{ p.ten_phong }}</span>{% endfor %}
+    {% else %}
+      <span style="color:#b91c1c;">Không tìm thấy hộ</span>
+    {% endif %}
+  </p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>➕ Nhập chỉ số mới</h2></div>
+  <form method="post" action="/chi-so/them">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Công tơ</label>
+        <select name="ma_cong_to" required>
+          {% for c in cong_to_list %}
+          <option value="{{ c.ma_cong_to }}">
+            #{{ c.ma_cong_to }} – {{ c.ma_thiet_bi }}
+            ({{ c.loai_cong_to.value if c.loai_cong_to.value is defined else c.loai_cong_to }})
+            · hộ {{ c.ma_phong }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ngày ghi</label>
+        <input type="date" name="ngay_ghi" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Chỉ số cũ</label>
+        <input type="number" name="chi_so_cu" step="1" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>Chỉ số mới</label>
+        <input type="number" name="chi_so_moi" step="1" min="0" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Ghi chú</label>
+      <input type="text" name="ghi_chu" placeholder="Tùy chọn">
+    </div>
+    <button class="btn btn-teal" type="submit">Lưu chỉ số</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>📋 Lịch sử chỉ số</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Công tơ</th>
+          <th>Cũ</th>
+          <th>Mới</th>
+          <th>Ngày ghi</th>
+          <th>Đã chốt</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in danh_sach %}
+        <tr>
+          <td>{{ c.ma_chi_so }}</td>
+          <td>{{ c.ma_cong_to }}</td>
+          <td>{{ c.chi_so_cu }}</td>
+          <td>{{ c.chi_so_moi }}</td>
+          <td>{{ c.ngay_ghi }}</td>
+          <td>
+            {% if c.da_chot %}
+            <span class="badge badge-success">Đã chốt</span>
+            {% else %}
+            <span class="badge badge-warning">Chưa</span>
+            {% endif %}
+          </td>
+          <td>{{ c.ghi_chu or '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty">Chưa có chỉ số</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

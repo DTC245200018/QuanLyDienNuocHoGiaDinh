@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Thanh toán{% endblock %}
+{% block topbar_title %}Thanh toán & Công nợ{% endblock %}
+
+{% block content %}
+{% if thong_bao %}<div class="alert alert-success">{{ thong_bao }}</div>{% endif %}
+{% if loi %}<div class="alert alert-error">{{ loi }}</div>{% endif %}
+
+<div class="action-grid">
+  <div class="action-card blue">
+    <div class="action-icon blue">💳</div>
+    <div class="action-body">
+      <h3>Ghi nhận thanh toán</h3>
+      <p>Chọn hóa đơn còn nợ, nhập số tiền (một phần hoặc đủ). Hệ thống cập nhật trạng thái tự động.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>🔍 Tìm hóa đơn</h2></div>
+  <form method="get" action="/thanh-toan" class="form-row" style="align-items:end;margin:0;">
+    <div class="form-group" style="margin:0;">
+      <label>Mã HĐ / mã hộ / kỳ</label>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="VD: 32 hoặc 2026-08">
+    </div>
+    <div class="form-group" style="margin:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn" type="submit">Tìm</button>
+      {% if q %}
+      <a class="btn btn-outline" href="/thanh-toan">Xóa lọc</a>
+      <span style="font-size:.85rem;color:var(--muted);">{{ hoa_don_list|length }} hóa đơn</span>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>➕ Ghi nhận thanh toán</h2></div>
+  <form method="post" action="/thanh-toan/ghi">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hóa đơn</label>
+        <select name="ma_hoa_don" id="selHoaDon" required onchange="goiYSoTien()">
+          {% for h in hoa_don_list %}
+          {% set con_no = (h.tong_tien - h.so_tien_da_tra)|int %}
+          <option
+            value="{{ h.ma_hoa_don }}"
+            data-con-no="{{ con_no }}"
+            {% if h.trang_thai == 'da_thanh_toan' %}disabled{% endif %}
+          >
+            #{{ h.ma_hoa_don }} – Hộ {{ h.ma_phong }} – {{ h.ky_hoa_don }}
+            – Còn {{ con_no }} đ ({{ h.trang_thai }})
+          </option>
+          {% else %}
+          <option value="" disabled>Không có hóa đơn</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số tiền (VND)</label>
+        <input type="number" name="so_tien" id="inpSoTien" min="1" step="1" required>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hình thức</label>
+        <select name="hinh_thuc">
+          <option value="tien_mat">Tiền mặt</option>
+          <option value="chuyen_khoan">Chuyển khoản</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ghi chú</label>
+        <input type="text" name="ghi_chu" placeholder="Tùy chọn">
+      </div>
+    </div>
+    <button class="btn" type="submit">Ghi nhận thanh toán</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>📋 Lịch sử thanh toán</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Hóa đơn</th>
+          <th>Số tiền</th>
+          <th>Ngày</th>
+          <th>Hình thức</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in thanh_toan_list %}
+        <tr>
+          <td>{{ t.ma_thanh_toan }}</td>
+          <td>#{{ t.ma_hoa_don }}</td>
+          <td>{{ '{:,.0f}'.format(t.so_tien) }}</td>
+          <td>{{ t.ngay_thanh_toan }}</td>
+          <td>{{ t.hinh_thuc }}</td>
+          <td>{{ t.ghi_chu or '' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty">Chưa có giao dịch</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function goiYSoTien() {
+  var sel = document.getElementById('selHoaDon');
+  if (!sel || sel.selectedIndex < 0) return;
+  var opt = sel.options[sel.selectedIndex];
+  var conNo = opt.getAttribute('data-con-no');
+  if (conNo !== null && conNo !== '') {
+    document.getElementById('inpSoTien').value = conNo;
+  }
+}
+document.addEventListener('DOMContentLoaded', goiYSoTien);
+</script>
+{% endblock %}

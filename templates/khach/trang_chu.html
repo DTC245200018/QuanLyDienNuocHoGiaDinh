@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Nhà tôi{% endblock %}
+{% block topbar_title %}Nhà tôi{% endblock %}
+
+{% block content %}
+{% set ns = namespace(no=0, so_no=0, tong_hd=0) %}
+{% for h in hoa_don_list %}
+  {% set ns.tong_hd = ns.tong_hd + 1 %}
+  {% if h.trang_thai != 'da_thanh_toan' %}
+    {% set ns.no = ns.no + (h.tong_tien - h.so_tien_da_tra) %}
+    {% set ns.so_no = ns.so_no + 1 %}
+  {% endif %}
+{% endfor %}
+
+{% if not phong %}
+<div class="page-hero">
+  <h1>Xin chào, {{ user.ho_ten }}</h1>
+  <p>Tài khoản khách thuê của hệ thống quản lý điện nước.</p>
+</div>
+<div class="alert alert-error">
+  Tài khoản chưa được gán vào hộ gia đình. Vui lòng liên hệ quản lý để được gán hộ.
+</div>
+{% else %}
+
+<div class="page-hero">
+  <h1>🏠 Nhà tôi</h1>
+  <p>Xin chào <strong>{{ user.ho_ten }}</strong> — theo dõi hóa đơn và gợi ý tiết kiệm của hộ <strong>{{ phong.ten_phong }}</strong>.</p>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-icon rose">💳</div>
+    <div class="stat-info">
+      <div class="value" style="font-size:1.15rem;">{{ '{:,.0f}'.format(ns.no) }}</div>
+      <div class="label">Còn phải trả (đ)</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">📄</div>
+    <div class="stat-info">
+      <div class="value">{{ ns.so_no }}</div>
+      <div class="label">HĐ chưa trả đủ</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue">📋</div>
+    <div class="stat-info">
+      <div class="value">{{ ns.tong_hd }}</div>
+      <div class="label">Tổng hóa đơn</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">👥</div>
+    <div class="stat-info">
+      <div class="value">{{ phong.so_nguoi_o }}</div>
+      <div class="label">Số người trong hộ</div>
+    </div>
+  </div>
+</div>
+
+<div class="feature-row teal">
+  <div class="fi">🏡</div>
+  <div class="ft">
+    <h3>{{ phong.ten_phong }}</h3>
+    <p>Mã hộ {{ phong.ma_phong }} · Trạng thái: {{ phong.trang_thai }}{% if phong.ghi_chu %} · {{ phong.ghi_chu }}{% endif %}</p>
+  </div>
+</div>
+
+<div class="feature-row">
+  <div class="fi">🤖</div>
+  <div class="ft">
+    <h3>Gợi ý tiết kiệm AI</h3>
+    <p>Xem cảnh báo tiêu thụ và lời khuyên tiết kiệm điện nước dành riêng cho hộ bạn.</p>
+  </div>
+  <div class="fa">
+    <a class="btn btn-purple" href="/khach/ai">Mở AI hộ tôi</a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>📋 Hóa đơn điện – nước</h2>
+  </div>
+
+  {% if hoa_don_list %}
+  <div class="bill-list">
+    {% for h in hoa_don_list %}
+    <div class="bill-item">
+      <div>
+        <strong>Kỳ {{ h.ky_hoa_don }}</strong>
+        <div class="meta">
+          ⚡ {{ '{:,.0f}'.format(h.tong_tien_dien) }} đ
+          · 💧 {{ '{:,.0f}'.format(h.tong_tien_nuoc) }} đ
+        </div>
+        <div class="meta" style="margin-top:4px;">
+          Còn lại:
+          <strong>{{ '{:,.0f}'.format(h.tong_tien - h.so_tien_da_tra) }} đ</strong>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:1.05rem;font-weight:700;">{{ '{:,.0f}'.format(h.tong_tien) }} đ</div>
+        <div class="meta">Đã trả {{ '{:,.0f}'.format(h.so_tien_da_tra) }}</div>
+        {% if h.trang_thai == 'da_thanh_toan' %}
+        <span class="badge badge-success">Đã TT</span>
+        {% elif h.trang_thai == 'thanh_toan_mot_phan' %}
+        <span class="badge badge-warning">Một phần</span>
+        {% else %}
+        <span class="badge badge-danger">Chưa TT</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">Chưa có hóa đơn nào cho hộ này.</div>
+  {% endif %}
+</div>
+
+{% endif %}
+{% endblock %}

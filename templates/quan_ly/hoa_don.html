@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Hóa đơn{% endblock %}
+{% block topbar_title %}Hóa đơn{% endblock %}
+
+{% block content %}
+{% if thong_bao %}<div class="alert alert-success">{{ thong_bao }}</div>{% endif %}
+{% if loi %}<div class="alert alert-error">{{ loi }}</div>{% endif %}
+
+<div class="action-grid">
+  <div class="action-card orange">
+    <div class="action-icon orange">📄</div>
+    <div class="action-body">
+      <h3>Lập hóa đơn theo kỳ</h3>
+      <p>Hệ thống lấy chỉ số đã ghi, áp đơn giá đang hiệu lực và tạo hóa đơn chưa thanh toán.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>➕ Lập hóa đơn</h2></div>
+  <form method="post" action="/hoa-don/lap">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hộ gia đình</label>
+        <select name="ma_phong" required>
+          {% for p in phong_list %}
+          <option value="{{ p.ma_phong }}">#{{ p.ma_phong }} – {{ p.ten_phong }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Kỳ (YYYY-MM)</label>
+        <input type="text" name="ky_hoa_don" required placeholder="2026-08" value="2026-08">
+      </div>
+    </div>
+    <button class="btn" type="submit">Lập hóa đơn</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>🔍 Tìm hóa đơn</h2></div>
+  <form method="get" action="/hoa-don" class="form-row" style="align-items:end;margin:0;">
+    <div class="form-group" style="margin:0;">
+      <label>Mã HĐ / mã hộ / kỳ</label>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="VD: 29 hoặc 2026-08">
+    </div>
+    <div class="form-group" style="margin:0;display:flex;gap:8px;">
+      <button class="btn" type="submit">Tìm</button>
+      {% if q %}<a class="btn btn-outline" href="/hoa-don">Xóa lọc</a>{% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>📋 Danh sách hóa đơn</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Hộ</th>
+          <th>Kỳ</th>
+          <th>Tiền điện</th>
+          <th>Tiền nước</th>
+          <th>Tổng</th>
+          <th>Đã trả</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in danh_sach %}
+        <tr>
+          <td>{{ h.ma_hoa_don }}</td>
+          <td>{{ h.ma_phong }}</td>
+          <td>{{ h.ky_hoa_don }}</td>
+          <td>{{ '{:,.0f}'.format(h.tong_tien_dien) }}</td>
+          <td>{{ '{:,.0f}'.format(h.tong_tien_nuoc) }}</td>
+          <td><strong>{{ '{:,.0f}'.format(h.tong_tien) }}</strong></td>
+          <td>{{ '{:,.0f}'.format(h.so_tien_da_tra) }}</td>
+          <td>
+            {% if h.trang_thai == 'da_thanh_toan' %}
+            <span class="badge badge-success">Đã TT</span>
+            {% elif h.trang_thai == 'thanh_toan_mot_phan' %}
+            <span class="badge badge-warning">Một phần</span>
+            {% else %}
+            <span class="badge badge-danger">Chưa TT</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="empty">
+          {% if q %}Không tìm thấy{% else %}Chưa có hóa đơn{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

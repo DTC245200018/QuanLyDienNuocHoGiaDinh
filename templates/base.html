@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}QL Điện Nước{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+{% if user %}
+{% set role = user.vai_tro.value if user.vai_tro.value is defined else user.vai_tro %}
+{% set is_khach = (role == 'khach_thue' or role == 'KHACH_THUE') %}
+{% set path = request.url.path %}
+<div class="app {% if is_khach %}theme-khach{% endif %}">
+  <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">⚡</span>
+      <div>
+        <div class="brand-title">QL Điện Nước</div>
+        <div class="brand-sub">{% if is_khach %}Hộ gia đình{% else %}Quản trị + AI{% endif %}</div>
+      </div>
+    </div>
+    <ul class="sidebar-nav">
+      {% if is_khach %}
+      <li><a href="/khach" class="{% if path == '/khach' %}active{% endif %}"><span class="icon">🏠</span> Nhà tôi</a></li>
+      <li><a href="/khach/ai" class="{% if path.startswith('/khach/ai') %}active{% endif %}"><span class="icon">🤖</span> Gợi ý AI</a></li>
+      <li><a href="/dang-xuat"><span class="icon">🚪</span> Đăng xuất</a></li>
+      {% else %}
+      <li class="nav-label">Quản lý</li>
+      <li><a href="/dashboard" class="{% if path == '/dashboard' %}active{% endif %}"><span class="icon">📊</span> Dashboard</a></li>
+      <li><a href="/phong" class="{% if path.startswith('/phong') %}active{% endif %}"><span class="icon">🏠</span> Hộ gia đình</a></li>
+      <li><a href="/chi-so" class="{% if path.startswith('/chi-so') %}active{% endif %}"><span class="icon">📟</span> Chỉ số</a></li>
+      <li><a href="/hoa-don" class="{% if path.startswith('/hoa-don') %}active{% endif %}"><span class="icon">📄</span> Hóa đơn</a></li>
+      <li><a href="/thanh-toan" class="{% if path.startswith('/thanh-toan') %}active{% endif %}"><span class="icon">💳</span> Thanh toán</a></li>
+      <li><a href="/don-gia" class="{% if path.startswith('/don-gia') %}active{% endif %}"><span class="icon">💰</span> Đơn giá</a></li>
+      <li class="nav-label">AI</li>
+      <li><a href="/ai" class="{% if path.startswith('/ai') %}active{% endif %}"><span class="icon">🤖</span> AI Cảnh báo</a></li>
+      <li><a href="/dang-xuat"><span class="icon">🚪</span> Đăng xuất</a></li>
+      {% endif %}
+    </ul>
+    <div class="sidebar-footer">
+      Hệ thống hóa đơn điện nước<br>có tích hợp AI
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" type="button" onclick="toggleSidebar()">☰</button>
+        <span class="topbar-title">{% block topbar_title %}Dashboard{% endblock %}</span>
+      </div>
+      <div class="topbar-user">
+        <span>{{ user.ho_ten }}</span>
+        <div class="avatar">{{ user.ho_ten[:1] }}</div>
+      </div>
+    </header>
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<script>
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+</script>
+{% else %}
+  {% block login %}{% endblock %}
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Hộ gia đình{% endblock %}
+{% block topbar_title %}Hộ gia đình{% endblock %}
+
+{% block content %}
+{% if thong_bao %}<div class="alert alert-success">{{ thong_bao }}</div>{% endif %}
+{% if loi %}<div class="alert alert-error">{{ loi }}</div>{% endif %}
+
+<div class="action-grid">
+  <div class="action-card blue">
+    <div class="action-icon blue">🏠</div>
+    <div class="action-body">
+      <h3>Quản lý hộ gia đình</h3>
+      <p>Thêm hộ mới sẽ tự tạo tài khoản khách, công tơ điện và công tơ nước.</p>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>➕ Thêm hộ mới</h2></div>
+  <form method="post" action="/phong/them">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Họ tên hộ</label>
+        <input type="text" name="ten_phong" required placeholder="VD: Nguyễn Văn D">
+      </div>
+      <div class="form-group">
+        <label>Số người</label>
+        <input type="number" name="so_nguoi_o" value="1" min="1" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Ghi chú</label>
+      <input type="text" name="ghi_chu" placeholder="Tùy chọn">
+    </div>
+    <button class="btn" type="submit">Thêm hộ</button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>🔍 Tìm hộ</h2>
+  </div>
+  <form method="get" action="/phong" class="form-row" style="align-items:end;margin:0;">
+    <div class="form-group" style="margin:0;">
+      <label>Mã hoặc tên hộ</label>
+      <input type="text" name="q" value="{{ q or '' }}" placeholder="VD: 21 hoặc Nguyễn">
+    </div>
+    <div class="form-group" style="margin:0;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" type="submit">Tìm</button>
+      {% if q %}
+      <a class="btn btn-outline" href="/phong">Xóa lọc</a>
+      <span style="align-self:center;font-size:.85rem;color:var(--muted);">{{ danh_sach|length }} kết quả</span>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>📋 Danh sách hộ</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mã</th>
+          <th>Họ tên</th>
+          <th>Số người</th>
+          <th>Trạng thái</th>
+          <th>Mã khách</th>
+          <th>Ghi chú</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in danh_sach %}
+        <tr>
+          <td>{{ p.ma_phong }}</td>
+          <td><strong>{{ p.ten_phong }}</strong></td>
+          <td>{{ p.so_nguoi_o }}</td>
+          <td>
+            {% if p.trang_thai == 'dang_thue' %}
+            <span class="badge badge-success">Đang thuê</span>
+            {% else %}
+            <span class="badge badge-info">{{ p.trang_thai }}</span>
+            {% endif %}
+          </td>
+          <td>{{ p.ma_khach_thue or '—' }}</td>
+          <td>{{ p.ghi_chu or '' }}</td>
+          <td>
+            <form method="post" action="/phong/xoa/{{ p.ma_phong }}"
+                  onsubmit="return confirm('Xóa hộ {{ p.ten_phong }}? Chỉ xóa được khi chưa có hóa đơn.');"
+                  style="display:inline;">
+              <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty">
+          {% if q %}Không tìm thấy hộ{% else %}Chưa có hộ nào{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

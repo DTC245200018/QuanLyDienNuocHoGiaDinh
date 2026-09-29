@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Chatbot AI{% endblock %}
+{% block topbar_title %}Chatbot AI – Hộ tôi{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+  <h1>🤖 Chatbot AI hộ tôi</h1>
+  <p>
+    {% if phong %}
+    Trò chuyện về hộ <strong>{{ phong.ten_phong }}</strong> (mã {{ phong.ma_phong }}):
+    hóa đơn, công nợ, gợi ý tiết kiệm. Chỉ dữ liệu hộ của bạn.
+    {% else %}
+    Tài khoản chưa gắn hộ — liên hệ quản lý.
+    {% endif %}
+  </p>
+</div>
+
+<div class="feature-row">
+  <div class="fi">🏠</div>
+  <div class="ft">
+    <h3>Chỉ hộ của bạn</h3>
+    <p>AI không trả lời dữ liệu hộ khác. Câu hỏi ngoài hệ thống sẽ được từ chối.</p>
+  </div>
+  <div class="fa">
+    <a class="btn btn-outline" href="/khach">← Nhà tôi</a>
+  </div>
+</div>
+
+{% if not phong %}
+<div class="alert alert-error">Tài khoản chưa được gán vào hộ. Liên hệ quản lý.</div>
+{% else %}
+
+<div class="card chat-card">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <h2>Hội thoại</h2>
+    <form method="post" action="/khach/ai/xoa-chat" style="margin:0;">
+      <button type="submit" class="btn btn-outline btn-sm">Xóa hội thoại</button>
+    </form>
+  </div>
+
+  <div class="chat-box" id="chatBox">
+    {% if tin_nhan %}
+      {% for m in tin_nhan %}
+        <div class="chat-row {% if m.role == 'user' %}me{% else %}bot{% endif %}">
+          <div class="bubble">
+            <div class="who">{% if m.role == 'user' %}Bạn{% else %}AI{% endif %}</div>
+            <div class="msg">{{ m.text }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="chat-empty">
+        Thử hỏi: “Phân tích hộ tôi”, “Còn nợ bao nhiêu?”, “Gợi ý tiết kiệm”.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="chat-suggest">
+    <button type="button" class="chip" onclick="dienCau('Phân tích hộ tôi')">Phân tích hộ tôi</button>
+    <button type="button" class="chip" onclick="dienCau('Hộ tôi còn nợ bao nhiêu?')">Còn nợ?</button>
+    <button type="button" class="chip" onclick="dienCau('Gợi ý tiết kiệm điện nước')">Gợi ý tiết kiệm</button>
+  </div>
+
+  <form method="post" action="/khach/ai/chat" class="chat-form">
+    <input
+      type="text"
+      name="cau_hoi"
+      id="cauHoi"
+      placeholder="Nhập câu hỏi về hộ bạn…"
+      autocomplete="off"
+      required
+    >
+    <button class="btn" type="submit">Gửi</button>
+  </form>
+</div>
+
+<style>
+.chat-card { padding-bottom: 12px; }
+.chat-box {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 12px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+  margin-bottom: 12px;
+}
+.chat-row { display: flex; }
+.chat-row.me { justify-content: flex-end; }
+.chat-row.bot { justify-content: flex-start; }
+.bubble {
+  max-width: min(92%, 520px);
+  padding: 10px 14px;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+.chat-row.me .bubble {
+  background: #0f766e;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.chat-row.bot .bubble {
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-bottom-left-radius: 4px;
+}
+.who { font-size: .72rem; opacity: .75; margin-bottom: 4px; font-weight: 600; }
+.chat-empty { text-align: center; color: var(--muted, #64748b); padding: 28px 12px; font-size: .92rem; }
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.chip {
+  border: 1px solid var(--border, #e2e8f0);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.chip:hover { border-color: #0f766e; color: #0f766e; }
+.chat-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.chat-form input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 14px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+@media (max-width: 600px) {
+  .chat-box { max-height: 320px; }
+}
+</style>
+<script>
+function dienCau(t) {
+  var el = document.getElementById('cauHoi');
+  if (el) { el.value = t; el.focus(); }
+}
+(function(){
+  var box = document.getElementById('chatBox');
+  if (box) box.scrollTop = box.scrollHeight;
+})();
+</script>
+
+{% endif %}
+{% endblock %}
