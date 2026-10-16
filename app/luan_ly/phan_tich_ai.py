@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Chatbot AI (Groq) + phan tich tieu thu.
-- Tra loi chinh: Groq (Llama) — AI that.
-- DB chi cung cap context so lieu that (khong bi so).
-- Fallback rule chi khi API loi / khong co key.
+- Model mac dinh: openai/gpt-oss-20b
+- Tra loi ngan, moi y 1 dong; fallback khi API loi.
 """
 
 import re
@@ -32,6 +31,24 @@ def _tinh_muc_tang(hien_tai: float, trung_binh: float) -> float:
     return ((hien_tai - trung_binh) / trung_binh) * 100
 
 
+def _lam_sach_tra_loi(text: str) -> str:
+    if not text:
+        return ""
+    t = text.strip()
+    t = (
+        t.replace("<br>", "\n")
+        .replace("<br/>", "\n")
+        .replace("<br />", "\n")
+        .replace("<BR>", "\n")
+        .replace("<BR/>", "\n")
+        .replace("<BR />", "\n")
+    )
+    t = re.sub(r"<[^>]+>", "", t)
+    while "\n\n\n" in t:
+        t = t.replace("\n\n\n", "\n\n")
+    return t.strip()
+
+
 def _tao_nhan_xet_fallback(
     ten_ho: str,
     tien_dien: float,
@@ -48,14 +65,14 @@ def _tao_nhan_xet_fallback(
             f"Tiền điện tăng {pct_dien:.0f}% so với TB "
             f"({tien_dien:,.0f} vs {tb_dien:,.0f} VND)."
         )
-        goi_y.append("Kiểm tra điều hòa, bình nóng lạnh, thiết bị công suất lớn.")
+        goi_y.append("Kiểm tra điều hòa, bình nóng lạnh.")
         muc_do = "cao" if pct_dien >= 50 else "trung_binh"
     if pct_nuoc >= 30:
         canh_bao.append(
             f"Tiền nước tăng {pct_nuoc:.0f}% so với TB "
             f"({tien_nuoc:,.0f} vs {tb_nuoc:,.0f} VND)."
         )
-        goi_y.append("Kiểm tra bồn cầu, vòi nước, đường ống rò rỉ.")
+        goi_y.append("Kiểm tra bồn cầu, vòi nước, đường ống rò.")
         if pct_nuoc >= 50:
             muc_do = "cao"
         elif muc_do == "thap":
@@ -63,8 +80,8 @@ def _tao_nhan_xet_fallback(
     if not canh_bao:
         return (
             "goi_y",
-            f"Hộ {ten_ho}: chi phí điện/nước kỳ này ổn định "
-            f"(điện {tien_dien:,.0f} VND, nước {tien_nuoc:,.0f} VND). "
+            f"Hộ {ten_ho}: điện/nước kỳ này ổn định.\n"
+            f"Điện {tien_dien:,.0f} VND · Nước {tien_nuoc:,.0f} VND.\n"
             f"Không thấy bất thường đáng kể.",
             "thap",
         )
@@ -78,16 +95,12 @@ def _tao_nhan_xet_fallback(
 
 
 async def _goi_gemini(prompt: str) -> str | None:
-    """
-    Goi AI qua Groq (OpenAI-compatible).
-    Ten ham giu _goi_gemini de khong pha cho goi cu trong project.
-    """
     if not cai_dat.ai_api_key:
         print("AI: thieu AI_API_KEY trong .env")
         return None
 
     url = cai_dat.ai_api_url or "https://api.groq.com/openai/v1/chat/completions"
-    model = getattr(cai_dat, "ai_model", None) or "llama-3.3-70b-versatile"
+    model = (getattr(cai_dat, "ai_model", None) or "").strip() or "openai/gpt-oss-20b"
 
     headers = {
         "Authorization": f"Bearer {cai_dat.ai_api_key}",
@@ -99,22 +112,27 @@ async def _goi_gemini(prompt: str) -> str | None:
             {
                 "role": "system",
                 "content": (
-                    "Bạn là trợ lý tiếng Việt của hệ thống quản lý hóa đơn điện nước hộ gia đình. "
-                    "Chỉ trả lời bằng tiếng Việt có dấu, đủ câu, không cắt giữa chừng, "
-                    "không dùng tiêu đề tiếng Anh (cấm Sentence, Analysis)."
+                    "Bạn là chatbot tiếng Việt hệ thống hóa đơn điện nước. "
+                    "Trả lời NGẮN tối đa 5 dòng. Mỗi ý một dòng riêng. "
+                    "Xuống dòng thật, CẤM viết thẻ HTML như <br>. "
+                    "Không đoạn văn dài. Chỉ tiếng Việt có dấu."
                 ),
             },
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.25,
-        "max_tokens": 800,
+        "temperature": 0.2,
+        "max_tokens": 400,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
+    async def _mot_lan() -> str | None:
+        async with httpx.AsyncClient(timeout=35.0) as client:
             resp = await client.post(url, json=payload, headers=headers)
+            print(f"AI status={resp.status_code} model={model}")
+            if resp.status_code == 429:
+                print("AI rate limit 429")
+                return None
             if resp.status_code != 200:
-                print(f"AI HTTP {resp.status_code}: {resp.text[:400]}")
+                print(f"AI body: {resp.text[:400]}")
                 return None
 
             data = resp.json()
@@ -125,24 +143,32 @@ async def _goi_gemini(prompt: str) -> str | None:
 
             msg = choices[0].get("message") or {}
             text = str(msg.get("content") or "").strip()
-            if not text or len(text) < 12:
+            if not text or len(text) < 6:
+                print(f"AI short content: {str(msg)[:250]}")
+                return None
+
+            text = _lam_sach_tra_loi(text)
+            if not text or len(text) < 6:
                 return None
 
             low = text.lower()
             if any(
                 x in low
-                for x in [
-                    "sentence 1",
-                    "sentence 2",
-                    "electricity analysis",
-                    "<html",
-                    "<!doctype",
-                ]
+                for x in ["sentence 1", "sentence 2", "electricity analysis", "<html", "<!doctype"]
             ):
-                print(f"AI rejected format: {text[:120]}")
+                print(f"AI rejected: {text[:100]}")
                 return None
-
             return text
+
+    try:
+        kq = await _mot_lan()
+        if kq:
+            return kq
+        # Thu lai 1 lan (rate limit / glitch)
+        import asyncio as _aio
+        await _aio.sleep(1.5)
+        print("AI retry...")
+        return await _mot_lan()
     except Exception as e:
         print(f"AI exception: {e}")
         return None
@@ -182,15 +208,16 @@ async def phan_tich_phong(
     pct_nuoc = _tinh_muc_tang(tien_nuoc, tb_nuoc)
 
     prompt = (
-        "Viết nhận xét hóa đơn điện nước bằng tiếng Việt có dấu, đủ 3 phần, không cắt câu.\n"
+        "Viết NHẬN XÉT NGẮN (tối đa 5 dòng, mỗi ý 1 dòng) bằng tiếng Việt.\n"
+        "CẤM thẻ HTML.\n"
         f"Số liệu (cấm bịa): hộ {phong.ten_phong}, mã {ma_phong}, kỳ {hd.ky_hoa_don}, "
         f"điện {tien_dien:,.0f} VND, nước {tien_nuoc:,.0f} VND, "
         f"TB điện {tb_dien:,.0f}, TB nước {tb_nuoc:,.0f}, "
         f"đổi điện {pct_dien:+.1f}%, đổi nước {pct_nuoc:+.1f}%.\n"
-        "Phần 1 nhận xét; phần 2 cảnh báo nếu ≥30% (không thì nói ổn định); phần 3 hai gợi ý tiết kiệm."
+        "Dòng 1: kết luận. Dòng 2: số chính. Dòng 3: cảnh báo nếu ≥30%. Dòng 4: 1 gợi ý ngắn."
     )
     noi = await _goi_gemini(prompt)
-    if not noi or len(noi) < 40:
+    if not noi or len(noi) < 20:
         loai, noi, muc = _tao_nhan_xet_fallback(
             phong.ten_phong, tien_dien, tien_nuoc, tb_dien, tb_nuoc, pct_dien, pct_nuoc
         )
@@ -225,10 +252,7 @@ def lay_canh_bao_phong(db: Session, ma_phong: int) -> list[CanhBaoAI]:
     )
 
 
-# ========== CHATBOT ==========
-
 def _trich_ma_phong_tu_cau(cau: str) -> int | None:
-    """Chi bat ma khi co tu khoa ho/ma/phong — tranh '1+1' -> ma 1."""
     if not cau:
         return None
     m = re.search(
@@ -305,12 +329,11 @@ def _dong_goi_context_ho(db: Session, ma_phong: int) -> str | None:
 
 
 def _fallback_theo_cau(db: Session, cau: str, ma_phong: int | None) -> str:
-    """Chi khi AI API loi — van dua tren DB neu co ho."""
     t = (cau or "").lower()
     if ma_phong is None:
         return (
-            "Hiện chưa gọi được dịch vụ AI. "
-            "Bạn hỏi lại sau hoặc nêu rõ mã hộ (vd: Phân tích hộ 22)."
+            "Hiện chưa gọi được dịch vụ AI.\n"
+            "Hỏi lại sau hoặc nêu rõ mã hộ (vd: Phân tích hộ 22)."
         )
     phong = db.query(Phong).filter(Phong.ma_phong == ma_phong).first()
     hd = (
@@ -333,13 +356,13 @@ def _fallback_theo_cau(db: Session, cau: str, ma_phong: int | None) -> str:
     if any(k in t for k in ["nợ", "no ", "công nợ", "cong no", "con no"]):
         if no <= 0:
             return (
-                f"[Dữ liệu hệ thống — AI tạm thời gián đoạn] "
-                f"Hộ {phong.ten_phong} kỳ {hd.ky_hoa_don}: không còn nợ."
+                f"Hộ {phong.ten_phong} kỳ {hd.ky_hoa_don}: không còn nợ.\n"
+                f"(Số liệu hệ thống — AI tạm gián đoạn)"
             )
         return (
-            f"[Dữ liệu hệ thống — AI tạm thời gián đoạn] "
-            f"Hộ {phong.ten_phong} kỳ {hd.ky_hoa_don}: còn nợ {no:,.0f} VND "
-            f"(tổng {tong:,.0f}, đã trả {da:,.0f})."
+            f"Hộ {phong.ten_phong} kỳ {hd.ky_hoa_don}: còn nợ {no:,.0f} VND.\n"
+            f"Tổng {tong:,.0f} · Đã trả {da:,.0f}.\n"
+            f"(Số liệu hệ thống — AI tạm gián đoạn)"
         )
 
     lich = [h for h in _lay_lich_su_hoa_don(db, ma_phong, 6) if h.ma_hoa_don != hd.ma_hoa_don]
@@ -357,7 +380,7 @@ def _fallback_theo_cau(db: Session, cau: str, ma_phong: int | None) -> str:
         _tinh_muc_tang(td, tb_d),
         _tinh_muc_tang(tn, tb_n),
     )
-    return f"[AI tạm thời gián đoạn — trả lời dự phòng]\n{text}"
+    return f"[AI tạm gián đoạn]\n{text}"
 
 
 async def chat_ai(
@@ -370,7 +393,7 @@ async def chat_ai(
     cau = (cau_hoi or "").strip()
     if not cau:
         return {
-            "tra_loi": "Bạn hãy nhập câu hỏi về hóa đơn điện nước, hộ gia đình hoặc tiết kiệm.",
+            "tra_loi": "Bạn hãy nhập câu hỏi về hóa đơn điện nước, hộ hoặc tiết kiệm.",
             "ma_phong": None,
             "tu_choi": False,
         }
@@ -383,10 +406,8 @@ async def chat_ai(
     if _noi_dung_ngoai_pham_vi(cau):
         return {
             "tra_loi": (
-                "Mình là chatbot của hệ thống quản lý hóa đơn điện nước. "
-                "Chỉ hỗ trợ: hộ, chỉ số, hóa đơn, thanh toán, công nợ, "
-                "phân tích tiêu thụ và gợi ý tiết kiệm. "
-                "Bạn vui lòng hỏi trong phạm vi này."
+                "Mình chỉ hỗ trợ: hộ, hóa đơn, công nợ, phân tích tiêu thụ, gợi ý tiết kiệm.\n"
+                "Vui lòng hỏi trong phạm vi hệ thống."
             ),
             "ma_phong": None,
             "tu_choi": True,
@@ -397,17 +418,19 @@ async def chat_ai(
         ctx = _dong_goi_context_ho(db, ma_phong)
         if ctx is None and chi_duoc_ma_phong is None:
             return {
-                "tra_loi": f"Không tìm thấy hộ mã {ma_phong} trong hệ thống.",
+                "tra_loi": f"Không tìm thấy hộ mã {ma_phong}.",
                 "ma_phong": ma_phong,
                 "tu_choi": False,
             }
         context = ctx or ""
 
     huong_dan = (
-        "Trả lời đúng trọng tâm câu hỏi bằng tiếng Việt có dấu.\n"
-        "CHỈ dùng số trong DỮ LIỆU HỆ THỐNG (nếu có). Cấm bịa số.\n"
-        "Phạm vi: hộ, chỉ số, hóa đơn, thanh toán, công nợ, phân tích, gợi ý tiết kiệm.\n"
-        "2–6 câu, đủ ý, không markdown phức tạp."
+        "Trả lời NGẮN (tối đa 5 dòng). Mỗi ý một dòng.\n"
+        "CẤM viết thẻ HTML (<br>, <p>, …). Chỉ xuống dòng thật.\n"
+        "Dòng 1: kết luận (còn nợ / không nợ / tăng bất thường…).\n"
+        "Dòng 2–3: 1–2 số từ DỮ LIỆU.\n"
+        "Dòng 4: 1 gợi ý ngắn nếu hỏi phân tích/tiết kiệm.\n"
+        "Cấm bịa số ngoài DỮ LIỆU."
     )
 
     if context:
@@ -415,20 +438,19 @@ async def chat_ai(
             f"{huong_dan}\n\n"
             f"=== DỮ LIỆU HỆ THỐNG ===\n{context}\n=== HẾT DỮ LIỆU ===\n\n"
             f"Câu hỏi: {cau}\n\n"
-            f"Viết câu trả lời hoàn chỉnh:"
+            f"Trả lời ngắn, mỗi ý 1 dòng:"
         )
     else:
         prompt = (
             f"{huong_dan}\n\n"
-            f"Chưa gắn hộ cụ thể. Nếu cần số liệu từng hộ, nhờ người dùng nêu mã hộ (vd: hộ 22).\n\n"
+            f"Chưa có mã hộ. Nếu cần số liệu, nhờ nêu mã hộ (vd: hộ 22).\n\n"
             f"Câu hỏi: {cau}\n\n"
-            f"Viết câu trả lời hoàn chỉnh:"
+            f"Trả lời ngắn, mỗi ý 1 dòng:"
         )
 
-    # Duong chinh: Groq
     noi = await _goi_gemini(prompt)
 
-    if noi and len(noi.strip()) >= 12:
+    if noi and len(noi.strip()) >= 8:
         return {
             "tra_loi": noi.strip(),
             "ma_phong": ma_phong,
