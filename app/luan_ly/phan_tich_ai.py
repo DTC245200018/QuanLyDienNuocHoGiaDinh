@@ -121,7 +121,7 @@ async def _goi_gemini(prompt: str) -> str | None:
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
-        "max_tokens": 400,
+        "max_tokens": 900,
     }
 
     async def _mot_lan() -> str | None:

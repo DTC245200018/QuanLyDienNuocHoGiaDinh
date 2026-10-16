@@ -16,7 +16,7 @@ class CaiDat(BaseSettings):
     ai_provider: str = "groq"
     ai_api_key: str = ""
     ai_api_url: str = "https://api.groq.com/openai/v1/chat/completions"
-    ai_model: str = "llama-3.3-70b-versatile"
+    ai_model: str = "openai/gpt-oss-20b"
 
     model_config = SettingsConfigDict(
         env_file=".env",
