@@ -3,16 +3,14 @@ Cac trang web HTML day du.
 Session cookie don gian de giu dang nhap.
 Chatbot AI: lich su chat chi trong phien.
 """
-
 import uuid
+from pathlib import Path
 from datetime import date
 from urllib.parse import quote
-
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
 from app.luan_ly.xac_thuc import lay_db, xac_thuc_nguoi_dung
 from app.luan_ly.xu_ly_phong import (
     lay_danh_sach_phong,
@@ -33,7 +31,10 @@ from app.mo_hinh.phong import Phong
 from app.mo_hinh.don_gia import LoaiDonGia
 
 router = APIRouter(tags=["Trang web"])
-templates = Jinja2Templates(directory="templates")
+
+# backend/app/giao_dien/trang_web.py -> 4 cap parent = thu muc project
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent.parent / "frontend"
+templates = Jinja2Templates(directory=str(FRONTEND_DIR / "templates"))
 
 # session_id cookie -> ma_nguoi_dung
 _sessions: dict[str, int] = {}
@@ -88,13 +89,11 @@ def _lay_chat_log(request: Request) -> list:
 def _them_chat(request: Request, role: str, text: str) -> None:
     log = _lay_chat_log(request)
     log.append({"role": role, "text": text})
-    # Gioi han 40 tin de nhe RAM
     if len(log) > 40:
         del log[:-40]
 
 
 # ========== AUTH ==========
-
 @router.get("/", response_class=HTMLResponse)
 def trang_goc(request: Request, db: Session = Depends(lay_db)):
     user = _lay_user(request, db)
@@ -151,7 +150,6 @@ def dang_xuat(request: Request):
 
 
 # ========== DASHBOARD ==========
-
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(lay_db)):
     user = _require_user(request, db)
@@ -159,7 +157,6 @@ def dashboard(request: Request, db: Session = Depends(lay_db)):
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     ds_hd = (
         db.query(HoaDon)
         .order_by(HoaDon.ma_phong.asc(), HoaDon.ma_hoa_don.asc())
@@ -172,7 +169,6 @@ def dashboard(request: Request, db: Session = Depends(lay_db)):
         if h.trang_thai != "da_thanh_toan"
     )
     hd_no = [h for h in ds_hd if h.trang_thai != "da_thanh_toan"][:8]
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/dashboard.html",
@@ -189,7 +185,6 @@ def dashboard(request: Request, db: Session = Depends(lay_db)):
 
 
 # ========== HO GIA DINH ==========
-
 @router.get("/phong", response_class=HTMLResponse)
 def trang_phong(
     request: Request,
@@ -201,7 +196,6 @@ def trang_phong(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     q = (q or "").strip()
     danh_sach = _loc_phong(lay_danh_sach_phong(db), q)
     return templates.TemplateResponse(
@@ -230,7 +224,6 @@ def them_phong(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     loi = thong_bao = None
     try:
         phong, khach, mk = tao_phong(
@@ -253,7 +246,6 @@ def them_phong(
         loi = str(e)
     except Exception as e:
         loi = f"Lỗi: {e}"
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/phong.html",
@@ -274,7 +266,6 @@ def xoa_phong_web(ma_phong: int, request: Request, db: Session = Depends(lay_db)
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     loi = thong_bao = None
     phong = lay_phong_theo_ma(db, ma_phong)
     if not phong:
@@ -288,7 +279,6 @@ def xoa_phong_web(ma_phong: int, request: Request, db: Session = Depends(lay_db)
             loi = str(e)
         except Exception as e:
             loi = f"Lỗi: {e}"
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/phong.html",
@@ -303,7 +293,6 @@ def xoa_phong_web(ma_phong: int, request: Request, db: Session = Depends(lay_db)
 
 
 # ========== CHI SO ==========
-
 @router.get("/chi-so", response_class=HTMLResponse)
 def trang_chi_so(
     request: Request,
@@ -315,11 +304,9 @@ def trang_chi_so(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     phong_list = lay_danh_sach_phong(db)
     q = (q or "").strip()
     phong_loc = _loc_phong(phong_list, q) if q else []
-
     if q:
         ma_set = {p.ma_phong for p in phong_loc}
         cong_to_list = [c for c in lay_danh_sach_cong_to(db) if c.ma_phong in ma_set]
@@ -328,7 +315,6 @@ def trang_chi_so(
     else:
         cong_to_list = lay_danh_sach_cong_to(db)
         danh_sach = lay_danh_sach_chi_so(db)
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/chi_so.html",
@@ -360,7 +346,6 @@ def them_chi_so(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     loi = thong_bao = None
     try:
         tao_chi_so(
@@ -376,7 +361,6 @@ def them_chi_so(
         loi = str(e)
     except Exception as e:
         loi = f"Lỗi: {e}"
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/chi_so.html",
@@ -394,7 +378,6 @@ def them_chi_so(
 
 
 # ========== HOA DON ==========
-
 @router.get("/hoa-don", response_class=HTMLResponse)
 def trang_hoa_don(
     request: Request,
@@ -406,7 +389,6 @@ def trang_hoa_don(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     q = (q or "").strip()
     danh_sach = lay_danh_sach_hoa_don(db)
     if q:
@@ -421,7 +403,6 @@ def trang_hoa_don(
                 elif q.lower() in (h.trang_thai or "").lower():
                     loc.append(h)
         danh_sach = loc
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/hoa_don.html",
@@ -448,7 +429,6 @@ def web_lap_hoa_don(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     loi = thong_bao = None
     try:
         hd = lap_hoa_don(db, ma_phong=ma_phong, ky_hoa_don=ky_hoa_don)
@@ -457,7 +437,6 @@ def web_lap_hoa_don(
         loi = str(e)
     except Exception as e:
         loi = f"Lỗi: {e}"
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/hoa_don.html",
@@ -473,7 +452,6 @@ def web_lap_hoa_don(
 
 
 # ========== THANH TOAN ==========
-
 @router.get("/thanh-toan", response_class=HTMLResponse)
 def trang_thanh_toan(
     request: Request,
@@ -488,11 +466,9 @@ def trang_thanh_toan(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     q = (q or "").strip()
     hoa_don_list = lay_danh_sach_hoa_don(db)
     thanh_toan_list = lay_danh_sach_thanh_toan(db)
-
     if q:
         hd_loc = []
         for h in hoa_don_list:
@@ -507,13 +483,11 @@ def trang_thanh_toan(
         hoa_don_list = hd_loc
         ma_hd = {h.ma_hoa_don for h in hd_loc}
         thanh_toan_list = [t for t in thanh_toan_list if t.ma_hoa_don in ma_hd]
-
     thong_bao = None
     if ok is not None:
         thong_bao = f"Đã ghi nhận thanh toán {ok:,.0f} VND" + (
             f" (HĐ #{hd})" if hd else ""
         )
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/thanh_toan.html",
@@ -542,7 +516,6 @@ def web_ghi_thanh_toan(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     try:
         ghi_nhan_thanh_toan(
             db,
@@ -562,7 +535,6 @@ def web_ghi_thanh_toan(
 
 
 # ========== DON GIA ==========
-
 @router.get("/don-gia", response_class=HTMLResponse)
 def trang_don_gia(request: Request, db: Session = Depends(lay_db)):
     user = _require_user(request, db)
@@ -570,7 +542,6 @@ def trang_don_gia(request: Request, db: Session = Depends(lay_db)):
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/don_gia.html",
@@ -597,19 +568,16 @@ def web_them_don_gia(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach", status_code=302)
-
     loi = thong_bao = None
     try:
         if don_gia <= 0:
             raise ValueError("Đơn giá phải lớn hơn 0")
         loai_enum = LoaiDonGia.DIEN if loai == "dien" else LoaiDonGia.NUOC
         ng = date.fromisoformat(ngay_hieu_luc)
-
         for cu in lay_danh_sach_don_gia(db, loai_enum):
             if cu.dang_ap_dung:
                 cu.dang_ap_dung = False
         db.flush()
-
         tao_don_gia(
             db,
             loai=loai_enum,
@@ -623,7 +591,6 @@ def web_them_don_gia(
         thong_bao = f"Đã cập nhật đơn giá {loai_enum.value}: {don_gia:,.0f} đ"
     except Exception as e:
         loi = str(e)
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/don_gia.html",
@@ -637,7 +604,6 @@ def web_them_don_gia(
 
 
 # ========== AI CHATBOT (ADMIN) ==========
-
 @router.get("/ai", response_class=HTMLResponse)
 def trang_ai(request: Request, db: Session = Depends(lay_db)):
     user = _require_user(request, db)
@@ -645,7 +611,6 @@ def trang_ai(request: Request, db: Session = Depends(lay_db)):
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach/ai", status_code=302)
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/ai_canh_bao.html",
@@ -668,7 +633,6 @@ async def trang_ai_chat(
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach/ai", status_code=302)
-
     cau = (cau_hoi or "").strip()
     if cau:
         _them_chat(request, "user", cau)
@@ -677,7 +641,6 @@ async def trang_ai_chat(
             _them_chat(request, "bot", kq.get("tra_loi") or "Không có phản hồi.")
         except Exception as e:
             _them_chat(request, "bot", f"Lỗi xử lý: {e}")
-
     return templates.TemplateResponse(
         request=request,
         name="quan_ly/ai_canh_bao.html",
@@ -696,29 +659,24 @@ def trang_ai_xoa_chat(request: Request, db: Session = Depends(lay_db)):
         return RedirectResponse("/dang-nhap", status_code=302)
     if _la_khach(user):
         return RedirectResponse("/khach/ai", status_code=302)
-
     key = _chat_key(request)
     if key:
         _chat_logs[key] = []
-
     return RedirectResponse("/ai", status_code=302)
 
 
 # ========== KHACH THUE ==========
-
 @router.get("/khach", response_class=HTMLResponse)
 def trang_khach(request: Request, db: Session = Depends(lay_db)):
     user = _require_user(request, db)
     if not user:
         return RedirectResponse("/dang-nhap", status_code=302)
-
     phong = (
         db.query(Phong)
         .filter(Phong.ma_khach_thue == user.ma_nguoi_dung)
         .first()
     )
     hoa_don = lay_danh_sach_hoa_don(db, ma_phong=phong.ma_phong) if phong else []
-
     return templates.TemplateResponse(
         request=request,
         name="khach/trang_chu.html",
@@ -731,7 +689,6 @@ def trang_khach_ai(request: Request, db: Session = Depends(lay_db)):
     user = _require_user(request, db)
     if not user:
         return RedirectResponse("/dang-nhap", status_code=302)
-
     phong = (
         db.query(Phong)
         .filter(Phong.ma_khach_thue == user.ma_nguoi_dung)
@@ -757,13 +714,11 @@ async def trang_khach_ai_chat(
     user = _require_user(request, db)
     if not user:
         return RedirectResponse("/dang-nhap", status_code=302)
-
     phong = (
         db.query(Phong)
         .filter(Phong.ma_khach_thue == user.ma_nguoi_dung)
         .first()
     )
-
     cau = (cau_hoi or "").strip()
     if cau:
         _them_chat(request, "user", cau)
@@ -783,7 +738,6 @@ async def trang_khach_ai_chat(
                 _them_chat(request, "bot", kq.get("tra_loi") or "Không có phản hồi.")
             except Exception as e:
                 _them_chat(request, "bot", f"Lỗi xử lý: {e}")
-
     return templates.TemplateResponse(
         request=request,
         name="khach/ai.html",

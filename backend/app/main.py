@@ -2,6 +2,7 @@
 File khoi chay ung dung FastAPI.
 He thong quan ly hoa don dien nuoc ho gia dinh co tich hop AI.
 """
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -17,13 +18,21 @@ from app.giao_dien.quan_ly_thanh_toan import router as thanh_toan_router
 from app.giao_dien.ai_canh_bao import router as ai_router
 from app.giao_dien.trang_web import router as web_router
 
+# backend/app/main.py -> len 2 bac = thu muc goc project
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend"
+
 app = FastAPI(
     title="Quan Ly Hoa Don Dien Nuoc Ho Gia Dinh",
     description="He thong quan ly hoa don dien nuoc co tich hop AI",
     version="1.0.0",
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount(
+    "/static",
+    StaticFiles(directory=str(FRONTEND_DIR / "static")),
+    name="static",
+)
 
 app.include_router(web_router)
 app.include_router(dang_nhap_router)

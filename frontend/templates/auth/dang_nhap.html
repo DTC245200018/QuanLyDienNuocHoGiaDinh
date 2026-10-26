@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Đăng nhập{% endblock %}
+
+{% block login %}
+<div class="auth-layout">
+  <aside class="auth-story" aria-label="Giới thiệu hệ thống">
+    <div class="auth-brand">
+      <span class="mark">⚡</span>
+      <div>
+        <strong>QL Điện Nước</strong>
+        <small>Hóa đơn hộ gia đình</small>
+      </div>
+    </div>
+
+    <div class="auth-story-copy">
+      <span class="auth-story-tag">Quản lý · Thanh toán · AI</span>
+      <h1>Một hệ thống.<br>Trọn quy trình<br>điện – nước.</h1>
+      <p>
+        Theo dõi chỉ số, lập hóa đơn, ghi nhận thanh toán và nhận cảnh báo AI
+        khi tiêu thụ bất thường.
+      </p>
+      <div class="auth-journey">
+        <div class="auth-journey-item">
+          <span>01</span>
+          <div>
+            <strong>Chỉ số & hóa đơn</strong>
+            <small>Nhập chỉ số, tính tiền theo đơn giá từng kỳ</small>
+          </div>
+        </div>
+        <div class="auth-journey-item">
+          <span>02</span>
+          <div>
+            <strong>Thanh toán & công nợ</strong>
+            <small>Ghi nhận trả một phần hoặc đủ, theo dõi còn nợ</small>
+          </div>
+        </div>
+        <div class="auth-journey-item">
+          <span>03</span>
+          <div>
+            <strong>AI cảnh báo</strong>
+            <small>Phát hiện bất thường và gợi ý tiết kiệm</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-story-footer">
+      Hệ thống quản lý hóa đơn điện nước có tích hợp AI
+    </div>
+  </aside>
+
+  <section class="auth-form-panel">
+    <div class="login-card">
+      <h1>Chào mừng trở lại</h1>
+      <p class="subtitle">Đăng nhập để tiếp tục công việc của bạn</p>
+      {% if error %}
+      <div class="alert alert-error">{{ error }}</div>
+      {% endif %}
+      <form method="post" action="/dang-nhap">
+        <div class="form-group">
+          <label for="username">Tên đăng nhập</label>
+          <input id="username" type="text" name="username" required autocomplete="username" value="admin">
+        </div>
+        <div class="form-group">
+          <label for="password">Mật khẩu</label>
+          <input id="password" type="password" name="password" required autocomplete="current-password" value="admin123">
+        </div>
+        <button class="btn btn-block" type="submit">Đăng nhập</button>
+      </form>
+      <p style="margin-top:18px;text-align:center;font-size:.8rem;color:#8997ad;">
+        Tài khoản mẫu: admin / admin123
+      </p>
+    </div>
+  </section>
+</div>
+{% endblock %}

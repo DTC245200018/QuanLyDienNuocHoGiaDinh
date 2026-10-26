@@ -3,6 +3,11 @@
 {% block topbar_title %}Dashboard{% endblock %}
 
 {% block content %}
+<div class="page-hero">
+  <h1>Tổng quan hệ thống</h1>
+  <p>Theo dõi hộ gia đình, hóa đơn còn nợ và cảnh báo AI trong một màn hình.</p>
+</div>
+
 <div class="stats">
   <div class="stat-card">
     <div class="stat-icon indigo">🏠</div>
@@ -42,7 +47,7 @@
 </div>
 
 <div class="action-grid">
-  <div class="action-card purple">
+  <div class="action-card">
     <div class="action-icon purple">🤖</div>
     <div class="action-body">
       <h3>AI Phân tích & Cảnh báo</h3>
@@ -50,23 +55,23 @@
       <a class="btn btn-sm btn-purple" href="/ai">Chạy phân tích AI</a>
     </div>
   </div>
-  <div class="action-card teal">
+  <div class="action-card">
     <div class="action-icon teal">📟</div>
     <div class="action-body">
       <h3>Nhập chỉ số</h3>
-      <p>Ghi nhận chỉ số điện–nước thủ công, kiểm tra chỉ số mới không nhỏ hơn chỉ số cũ.</p>
+      <p>Ghi nhận chỉ số điện–nước, kiểm tra chỉ số mới không nhỏ hơn chỉ số cũ.</p>
       <a class="btn btn-sm btn-teal" href="/chi-so">Nhập chỉ số</a>
     </div>
   </div>
-  <div class="action-card orange">
+  <div class="action-card">
     <div class="action-icon orange">📄</div>
     <div class="action-body">
       <h3>Lập hóa đơn</h3>
       <p>Tính tiền điện nước theo kỳ từ chỉ số đã chốt và đơn giá đang áp dụng.</p>
-      <a class="btn btn-sm" href="/hoa-don" style="background:#ea580c;">Lập hóa đơn</a>
+      <a class="btn btn-sm" href="/hoa-don" style="background:#c2410c;border-color:#c2410c;">Lập hóa đơn</a>
     </div>
   </div>
-  <div class="action-card blue">
+  <div class="action-card">
     <div class="action-icon blue">💳</div>
     <div class="action-body">
       <h3>Thanh toán & Công nợ</h3>
@@ -78,7 +83,7 @@
 
 <div class="card">
   <div class="card-header">
-    <h2>📋 Hóa đơn cần thu</h2>
+    <h2>Hóa đơn cần thu</h2>
     <a class="btn btn-sm" href="/thanh-toan">Ghi nhận thanh toán</a>
   </div>
   <div class="table-wrap">
