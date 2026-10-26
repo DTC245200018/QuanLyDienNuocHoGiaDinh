@@ -207,29 +207,31 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 ---
 
-## Tổng hợp
+## Tổng hợp kết quả (kiểm thử hộp đen)
 
-Điền khi test thật trên commit hiện tại:
+Phương pháp: kiểm thử hộp đen qua giao diện web và URL.  
+Môi trường: Windows, FastAPI local http://127.0.0.1:8000, SQL Server, Groq API.  
+Người test: Đinh Bảo Khanh, Vũ Quang Minh.
 
-- TC01:
-- TC02:
-- TC03:
-- TC04:
-- TC05:
-- TC06:
-- TC07:
-- TC08:
-- TC09:
-- TC10:
-- TC11:
-- TC12:
-- TC13:
-- TC14:
-- TC15:
-- TC16:
+| Mã | Ngày test | Kết quả | Ghi chú ngắn |
+|----|-----------|---------|--------------|
+| TC01 | 10/10/2026 | Pass | admin vào /dashboard |
+| TC02 | 10/10/2026 | Pass | Sai mật khẩu bị từ chối |
+| TC03 | 10/10/2026 | Pass | Khách vào /khach, menu đúng vai trò |
+| TC04 | 11/10/2026 | Pass | Thêm hộ thành công |
+| TC05 | 11/10/2026 | Pass | Có công tơ điện + nước theo hộ |
+| TC06 | 12/10/2026 | Pass | Chỉ số mới ≥ cũ lưu được |
+| TC07 | 12/10/2026 | Pass | Chỉ số mới < cũ bị chặn |
+| TC08 | 12/10/2026 | Bỏ qua | IoT không bắt buộc; luồng chính nhập thủ công |
+| TC09 | 13/10/2026 | Pass | Lập HĐ theo kỳ, trạng thái chưa TT |
+| TC10 | 16/10/2026 | Pass | Chat /ai, nhãn [AI · Groq], số liệu khớp DB |
+| TC11 | 16/10/2026 | Pass | Key sai → [Dự phòng · không kết nối AI]; lập HĐ vẫn OK |
+| TC12 | 14/10/2026 | Pass | TT một phần rồi đủ; công nợ đúng |
+| TC13 | 13/10/2026 | Pass | Đơn giá mới áp dụng HĐ sau |
+| TC14 | 10/10/2026 | Pass | Khách không vào /dashboard, /hoa-don… |
+| TC15 | 17/10/2026 | Pass | Chat khách chỉ hộ được gán; hỏi mã hộ khác không lộ số liệu |
+| TC16 | 16/10/2026 | Pass | Cùng câu hỏi: Groq vs fallback, hai nhãn khác nhau |
 
-**Người test:**
-
-**Ngày test:**
-
-**Commit / phiên bản:**
+**Người test:** Đinh Bảo Khanh, Vũ Quang Minh  
+**Ngày hoàn tất bộ test:** 18/10/2026  
+**Commit đối chiếu:** nhánh main (đồng bộ Groq / README / TEST_CASE)  
